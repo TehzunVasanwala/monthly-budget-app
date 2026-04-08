@@ -804,11 +804,21 @@ function handleExpenseActions(event) {
 
 function openEditEntry(entry) {
   activeEditId = entry.id;
-  els.editTitleInput.value = entry.title;
-  els.editAmountInput.value = entry.amount;
-  els.editCategoryInput.value = entry.category;
-  els.editDateInput.value = entry.date;
-  els.editNoteInput.value = entry.note || "";
+  if (els.editTitleInput) {
+    els.editTitleInput.value = entry.title;
+  }
+  if (els.editAmountInput) {
+    els.editAmountInput.value = entry.amount;
+  }
+  if (els.editCategoryInput) {
+    els.editCategoryInput.value = entry.category;
+  }
+  if (els.editDateInput) {
+    els.editDateInput.value = entry.date;
+  }
+  if (els.editNoteInput) {
+    els.editNoteInput.value = entry.note || "";
+  }
   openDialog(els.editDialog);
 }
 
@@ -938,8 +948,12 @@ function listMonths() {
 
 function setDefaultDates() {
   const today = toInputDate(new Date());
-  els.dateInput.value = today;
-  els.incomeDateInput.value = today;
+  if (els.dateInput) {
+    els.dateInput.value = today;
+  }
+  if (els.incomeDateInput) {
+    els.incomeDateInput.value = today;
+  }
   if (els.recurringStartInput) {
     els.recurringStartInput.value = selectedMonthKey;
   }
@@ -947,7 +961,9 @@ function setDefaultDates() {
 
 function resetExpenseForm() {
   els.expenseForm.reset();
-  els.dateInput.value = toInputDate(new Date());
+  if (els.dateInput) {
+    els.dateInput.value = toInputDate(new Date());
+  }
   if (els.paymentModeInput) {
     els.paymentModeInput.value = "UPI";
   }
