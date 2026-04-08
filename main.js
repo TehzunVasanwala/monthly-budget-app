@@ -24,6 +24,7 @@ import {
   getIncomeForMonth,
   getMonthOptions,
   loadState,
+  normalizeState,
   saveState,
 } from "./state.js";
 import {
@@ -37,6 +38,7 @@ import {
   renderSavingsHistory,
   renderTrend,
 } from "./render.js";
+import { pullCloudState, pushCloudState, resetCloudContext } from "./sync.js";
 
 const state = loadState();
 let selectedMonthKey = getMonthKey(new Date());
@@ -150,6 +152,12 @@ const els = {
   categoryBudgetList: byId("categoryBudgetList"),
   shareAppButton: byId("shareAppButton"),
   shareAppStatus: byId("shareAppStatus"),
+  firebaseConfigInput: byId("firebaseConfigInput"),
+  firebaseDocumentPathInput: byId("firebaseDocumentPathInput"),
+  saveCloudSettingsButton: byId("saveCloudSettingsButton"),
+  pushCloudButton: byId("pushCloudButton"),
+  pullCloudButton: byId("pullCloudButton"),
+  cloudStatusNote: byId("cloudStatusNote"),
   exportCsvButton: byId("exportCsvButton"),
   smsImportInput: byId("smsImportInput"),
   previewSmsButton: byId("previewSmsButton"),
@@ -194,6 +202,7 @@ function boot() {
   ensureMonthState(state, selectedMonthKey);
   applyRecurringRules();
   setDefaultDates();
+  hydrateCloudSettings();
   renderAddShortcuts();
   bindEvents();
   registerPwaEvents();
@@ -299,6 +308,18 @@ function bindEvents() {
       activeView = "history";
       syncViews();
     });
+  }
+
+  if (els.saveCloudSettingsButton) {
+    els.saveCloudSettingsButton.addEventListener("click", saveCloudSettings);
+  }
+
+  if (els.pushCloudButton) {
+    els.pushCloudButton.addEventListener("click", pushCloudData);
+  }
+
+  if (els.pullCloudButton) {
+    els.pullCloudButton.addEventListener("click", pullCloudData);
   }
 
   els.expenseForm.addEventListener("submit", async (event) => {
@@ -522,6 +543,7 @@ function render() {
   renderRecurringList(els.recurringList, els.simpleItemTemplate, state.recurringRules);
   renderCategoryBudgets(els.categoryBudgetList, selectedMonthKey, state.categoryBudgets[selectedMonthKey] || {}, groupedCategories);
   renderSmsPreview();
+  renderCloudStatus();
 
   els.expenseListCaption.textContent = `${filteredExpenses.length} expense${filteredExpenses.length === 1 ? "" : "s"} shown for ${formatMonthLabel(selectedMonthKey)}.`;
   els.recurringStartInput.value = els.recurringStartInput.value || selectedMonthKey;
@@ -1059,6 +1081,77 @@ function closeDialog(dialog) {
 function persist() {
   saveState(state);
   render();
+}
+
+function hydrateCloudSettings() {
+  if (els.firebaseConfigInput) {
+    els.firebaseConfigInput.value = state.cloudSync.firebaseConfigText || "";
+  }
+  if (els.firebaseDocumentPathInput) {
+    els.firebaseDocumentPathInput.value = state.cloudSync.documentPath || "";
+  }
+}
+
+function renderCloudStatus() {
+  if (!els.cloudStatusNote) {
+    return;
+  }
+  if (!state.cloudSync.firebaseConfigText || !state.cloudSync.documentPath) {
+    els.cloudStatusNote.textContent = "Cloud sync is not configured yet.";
+    return;
+  }
+  if (state.cloudSync.lastSyncedAt) {
+    els.cloudStatusNote.textContent = `Cloud sync is ready. Last synced: ${state.cloudSync.lastSyncedAt}.`;
+    return;
+  }
+  els.cloudStatusNote.textContent = "Cloud sync is configured and ready.";
+}
+
+function saveCloudSettings() {
+  state.cloudSync.firebaseConfigText = els.firebaseConfigInput.value.trim();
+  state.cloudSync.documentPath = els.firebaseDocumentPathInput.value.trim();
+  state.cloudSync.lastSyncedAt = "";
+  resetCloudContext();
+  persist();
+  els.cloudStatusNote.textContent = state.cloudSync.firebaseConfigText && state.cloudSync.documentPath
+    ? "Cloud setup saved. You can now push or pull your data."
+    : "Cloud sync is not configured yet.";
+}
+
+async function pushCloudData() {
+  try {
+    saveCloudSettings();
+    await pushCloudState(state);
+    saveState(state);
+    renderCloudStatus();
+  } catch (error) {
+    els.cloudStatusNote.textContent = error && error.message ? error.message : "Unable to push data to cloud.";
+  }
+}
+
+async function pullCloudData() {
+  try {
+    saveCloudSettings();
+    const incoming = await pullCloudState(state, normalizeState);
+    replaceState(incoming);
+    state.cloudSync.lastSyncedAt = new Date().toLocaleString("en-IN");
+    saveState(state);
+    render();
+    els.cloudStatusNote.textContent = state.cloudSync.lastSyncedAt
+      ? `Cloud data loaded. Last synced: ${state.cloudSync.lastSyncedAt}.`
+      : "Cloud data loaded successfully.";
+  } catch (error) {
+    els.cloudStatusNote.textContent = error && error.message ? error.message : "Unable to pull data from cloud.";
+  }
+}
+
+function replaceState(nextState) {
+  Object.keys(state).forEach((key) => {
+    delete state[key];
+  });
+  Object.assign(state, nextState);
+  ensureMonthState(state, selectedMonthKey);
+  hydrateCloudSettings();
 }
 
 function exportCsv() {

@@ -1,24 +1,31 @@
 import { createId, DEFAULT_BUDGET, getMonthKey, toInputDate } from "./helpers.js";
 
-const STORAGE_KEY = "monthly-budget-app-v4";
-const LEGACY_KEYS = ["monthly-budget-app-v3", "monthly-budget-app-v2", "monthly-budget-app-v1"];
+const STORAGE_KEY = "monthly-budget-app";
+const BACKUP_STORAGE_KEY = "monthly-budget-app-backup";
+const LEGACY_KEYS = ["monthly-budget-app-v4", "monthly-budget-app-v3", "monthly-budget-app-v2", "monthly-budget-app-v1"];
 
 export function loadState() {
-  const current = readState(STORAGE_KEY);
-  if (current) {
-    return normalizeState(current);
-  }
-  for (const key of LEGACY_KEYS) {
-    const legacy = readState(key);
-    if (legacy) {
-      return normalizeState(legacy);
+  const candidates = [STORAGE_KEY, BACKUP_STORAGE_KEY, ...LEGACY_KEYS];
+  for (const key of candidates) {
+    const current = readState(key);
+    if (current) {
+      return normalizeState(current);
     }
   }
   return normalizeState({});
 }
 
 export function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const serialized = JSON.stringify({
+    ...state,
+    lastSavedAt: new Date().toISOString(),
+  });
+  try {
+    localStorage.setItem(STORAGE_KEY, serialized);
+    localStorage.setItem(BACKUP_STORAGE_KEY, serialized);
+  } catch (error) {
+    // Ignore storage write errors so the app keeps working.
+  }
 }
 
 function readState(key) {

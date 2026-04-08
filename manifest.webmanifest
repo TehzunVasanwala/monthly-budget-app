@@ -2,10 +2,14 @@
   "name": "Monthly Budget",
   "short_name": "Budget",
   "description": "Track a monthly budget and expenses from your phone.",
+  "id": "/",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
   "background_color": "#f5f7fb",
-  "theme_color": "#f5f7fb",
+  "theme_color": "#172646",
   "icons": [
     {
       "src": "icons/icon-192.svg",

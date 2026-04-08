@@ -538,6 +538,29 @@
           <p class="status-note" id="shareAppStatus">Share this app with your phone contacts or copy the live link on desktop.</p>
         </section>
 
+        <section class="card accent-sky">
+          <div class="section-head">
+            <h3>Cloud Sync</h3>
+            <p>Save your budget data to Firebase so the same data can be used on phone and laptop.</p>
+          </div>
+          <div class="entry-form">
+            <label>
+              <span>Firebase Config JSON</span>
+              <textarea id="firebaseConfigInput" rows="5" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'></textarea>
+            </label>
+            <label>
+              <span>Firestore Document Path</span>
+              <input id="firebaseDocumentPathInput" type="text" placeholder="apps/monthlyBudget/users/default">
+            </label>
+            <div class="quick-action-bar">
+              <button class="ghost-btn action-btn" id="saveCloudSettingsButton" type="button">Save Cloud Setup</button>
+              <button class="primary-btn action-btn" id="pushCloudButton" type="button">Push To Cloud</button>
+              <button class="ghost-btn action-btn" id="pullCloudButton" type="button">Pull From Cloud</button>
+            </div>
+            <p class="status-note" id="cloudStatusNote">Cloud sync is not configured yet.</p>
+          </div>
+        </section>
+
         <section class="card insights-card accent-amber">
           <div class="section-head">
             <h3>Smart Insights</h3>
