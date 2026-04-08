@@ -39,9 +39,9 @@ async function getFirebaseContext(state) {
   }
   let config;
   try {
-    config = JSON.parse(state.cloudSync.firebaseConfigText);
+    config = parseFirebaseConfig(state.cloudSync.firebaseConfigText);
   } catch (error) {
-    throw new Error("Firebase config JSON is invalid.");
+    throw new Error("Firebase config JSON is invalid. Paste only the Firebase config object or the full firebaseConfig block.");
   }
 
   const [{ initializeApp }, firestore] = await Promise.all([
@@ -52,4 +52,48 @@ async function getFirebaseContext(state) {
   const app = initializeApp(config, `monthly-budget-${config.projectId || "app"}`);
   firebaseContext = { ...firestore, db: firestore.getFirestore(app) };
   return firebaseContext;
+}
+
+function parseFirebaseConfig(input) {
+  const cleaned = normalizeFirebaseConfigText(input);
+  const parsed = JSON.parse(cleaned);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Invalid Firebase config.");
+  }
+  if (!parsed.apiKey || !parsed.projectId || !parsed.appId) {
+    throw new Error("Missing Firebase config fields.");
+  }
+  return parsed;
+}
+
+function normalizeFirebaseConfigText(input) {
+  let text = String(input || "").trim();
+  if (!text) {
+    throw new Error("Empty Firebase config.");
+  }
+
+  text = text
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\u00A0/g, " ");
+
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Firebase config object not found.");
+  }
+  text = text.slice(start, end + 1).trim();
+
+  text = text
+    .replace(/,\s*}/g, "}")
+    .replace(/,\s*]/g, "]");
+
+  if (/"[A-Za-z0-9_]+"\s*:/.test(text)) {
+    return text;
+  }
+
+  text = text.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":');
+  text = text.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+  return text;
 }

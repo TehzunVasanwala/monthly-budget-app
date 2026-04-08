@@ -1,6 +1,6 @@
 {
   "appId": "com.bacancy.monthlybudget",
   "appName": "Monthly Budget",
-  "webDir": ".",
+  "webDir": "www",
   "bundledWebRuntime": false
 }

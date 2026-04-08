@@ -1,7 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="42" fill="#f5f7fb"/>
-  <rect x="26" y="26" width="140" height="140" rx="30" fill="#1f5eff"/>
-  <path d="M53 119h86" stroke="#fff8f1" stroke-width="10" stroke-linecap="round"/>
-  <path d="M63 91c9-18 20-27 33-27 11 0 21 6 29 18l8 12" fill="none" stroke="#f8fbff" stroke-width="12" stroke-linecap="round"/>
-  <circle cx="70" cy="89" r="8" fill="#fff8f1"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172746"/>
+      <stop offset="58%" stop-color="#25519b"/>
+      <stop offset="100%" stop-color="#6b5cff"/>
+    </linearGradient>
+    <linearGradient id="flap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd56c"/>
+      <stop offset="100%" stop-color="#f3a93c"/>
+    </linearGradient>
+    <linearGradient id="wallet" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#dce8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="#f4f7fb"/>
+  <rect x="24" y="24" width="144" height="144" rx="40" fill="url(#bg)"/>
+  <rect x="48" y="74" width="96" height="62" rx="18" fill="url(#wallet)"/>
+  <rect x="62" y="56" width="50" height="24" rx="12" fill="url(#flap)"/>
+  <circle cx="124" cy="104" r="8" fill="#21458f"/>
 </svg>

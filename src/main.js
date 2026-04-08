@@ -49,7 +49,6 @@ let pendingReceiptData = "";
 let pendingReceiptName = "";
 let smsPreviewEntries = [];
 const amountShortcuts = [100, 200, 500, 1000, 2000, 5000];
-const quickCategories = ["Food", "Travel", "Bills", "Shopping", "Health", "Family"];
 
 const els = {
   installButton: byId("installButton"),
@@ -67,15 +66,6 @@ const els = {
   quickAddIncomeButton: byId("quickAddIncomeButton"),
   quickOpenHistoryButton: byId("quickOpenHistoryButton"),
   monthSettingsNote: byId("monthSettingsNote"),
-  todaySpendDisplay: byId("todaySpendDisplay"),
-  weekSpendDisplay: byId("weekSpendDisplay"),
-  dailyAverageDisplay: byId("dailyAverageDisplay"),
-  streakDisplay: byId("streakDisplay"),
-  highestCategoryDisplay: byId("highestCategoryDisplay"),
-  biggestExpenseDisplay: byId("biggestExpenseDisplay"),
-  expectedSpendDisplay: byId("expectedSpendDisplay"),
-  needWantDisplay: byId("needWantDisplay"),
-  smartInsightsList: byId("smartInsightsList"),
   smsImportedCountHomeDisplay: byId("smsImportedCountHomeDisplay"),
   smsBankCountDisplay: byId("smsBankCountDisplay"),
   smsCreditCountDisplay: byId("smsCreditCountDisplay"),
@@ -164,7 +154,6 @@ const els = {
   importSmsButton: byId("importSmsButton"),
   smsImportStatus: byId("smsImportStatus"),
   smsImportList: byId("smsImportList"),
-  fabAddButton: byId("fabAddButton"),
   viewButtons: [...document.querySelectorAll("[data-view-btn]")],
   views: [...document.querySelectorAll("[data-view]")],
   editDialog: byId("editDialog"),
@@ -173,16 +162,8 @@ const els = {
   editAmountInput: byId("editAmountInput"),
   editCategoryInput: byId("editCategoryInput"),
   editDateInput: byId("editDateInput"),
-  editPaymentModeInput: byId("editPaymentModeInput"),
-  editExpenseTypeInput: byId("editExpenseTypeInput"),
-  editAccountSourceInput: byId("editAccountSourceInput"),
-  editSourceNameInput: byId("editSourceNameInput"),
   editNoteInput: byId("editNoteInput"),
   cancelEditButton: byId("cancelEditButton"),
-  receiptDialog: byId("receiptDialog"),
-  receiptDialogTitle: byId("receiptDialogTitle"),
-  receiptPreviewImage: byId("receiptPreviewImage"),
-  closeReceiptButton: byId("closeReceiptButton"),
   expenseItemTemplate: byId("expenseItemTemplate"),
   simpleItemTemplate: byId("simpleItemTemplate"),
 };
@@ -265,12 +246,6 @@ function bindEvents() {
     });
   });
 
-  els.fabAddButton.addEventListener("click", () => {
-    activeView = "add";
-    syncViews();
-    els.titleInput.focus();
-  });
-
   if (els.quickAddExpenseButton) {
     els.quickAddExpenseButton.addEventListener("click", () => {
       activeView = "add";
@@ -322,26 +297,21 @@ function bindEvents() {
     els.pullCloudButton.addEventListener("click", pullCloudData);
   }
 
-  els.expenseForm.addEventListener("submit", async (event) => {
+  els.expenseForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const receiptFile = els.receiptInput.files && els.receiptInput.files[0];
-    if (receiptFile) {
-      pendingReceiptData = await readFileAsDataUrl(receiptFile);
-      pendingReceiptName = receiptFile.name;
-    }
     state.expenses.unshift({
       id: createId(),
       title: els.titleInput.value.trim(),
       amount: Number(els.amountInput.value),
       category: els.categoryInput.value,
       date: els.dateInput.value,
-      paymentMode: els.paymentModeInput.value,
-      accountSource: els.accountSourceInput.value,
-      sourceName: els.sourceNameInput.value.trim(),
-      expenseType: els.expenseTypeInput.value,
-      note: els.noteInput.value.trim(),
-      receiptDataUrl: pendingReceiptData,
-      receiptName: pendingReceiptName,
+      paymentMode: els.paymentModeInput ? els.paymentModeInput.value : "UPI",
+      accountSource: els.accountSourceInput ? els.accountSourceInput.value : "other",
+      sourceName: els.sourceNameInput ? els.sourceNameInput.value.trim() : "",
+      expenseType: els.expenseTypeInput ? els.expenseTypeInput.value : "need",
+      note: els.noteInput ? els.noteInput.value.trim() : "",
+      receiptDataUrl: "",
+      receiptName: "",
       recurringKey: "",
       smsImported: false,
       smsSignature: "",
@@ -360,7 +330,7 @@ function bindEvents() {
       amount: Number(els.incomeAmountInput.value),
       source: els.incomeSourceInput.value.trim(),
       date: els.incomeDateInput.value,
-      note: els.incomeNoteInput.value.trim(),
+      note: els.incomeNoteInput ? els.incomeNoteInput.value.trim() : "",
       recurringKey: "",
       sourceName: els.incomeSourceInput.value.trim(),
       accountSource: "bank-account",
@@ -372,45 +342,51 @@ function bindEvents() {
     persist();
   });
 
-  els.goalForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    state.savingsGoals.unshift({
-      id: createId(),
-      name: els.goalNameInput.value.trim(),
-      target: Number(els.goalTargetInput.value),
-      saved: Number(els.goalSavedInput.value),
-      deadline: els.goalDeadlineInput.value,
-      note: els.goalNoteInput.value.trim(),
+  if (els.goalForm) {
+    els.goalForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.savingsGoals.unshift({
+        id: createId(),
+        name: els.goalNameInput.value.trim(),
+        target: Number(els.goalTargetInput.value),
+        saved: Number(els.goalSavedInput.value),
+        deadline: els.goalDeadlineInput.value,
+        note: els.goalNoteInput.value.trim(),
+      });
+      els.goalForm.reset();
+      persist();
     });
-    els.goalForm.reset();
-    persist();
-  });
+  }
 
-  els.recurringForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    state.recurringRules.unshift({
-      id: createId(),
-      kind: els.recurringKindInput.value,
-      title: els.recurringTitleInput.value.trim(),
-      amount: Number(els.recurringAmountInput.value),
-      category: els.recurringCategoryInput.value.trim(),
-      day: Number(els.recurringDayInput.value),
-      startMonth: els.recurringStartInput.value,
-      note: els.recurringNoteInput.value.trim(),
-      active: true,
+  if (els.recurringForm) {
+    els.recurringForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.recurringRules.unshift({
+        id: createId(),
+        kind: els.recurringKindInput.value,
+        title: els.recurringTitleInput.value.trim(),
+        amount: Number(els.recurringAmountInput.value),
+        category: els.recurringCategoryInput.value.trim(),
+        day: Number(els.recurringDayInput.value),
+        startMonth: els.recurringStartInput.value,
+        note: els.recurringNoteInput.value.trim(),
+        active: true,
+      });
+      els.recurringForm.reset();
+      els.recurringStartInput.value = selectedMonthKey;
+      persist();
     });
-    els.recurringForm.reset();
-    els.recurringStartInput.value = selectedMonthKey;
-    persist();
-  });
+  }
 
-  els.categoryBudgetForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    ensureMonthState(state, selectedMonthKey);
-    state.categoryBudgets[selectedMonthKey][els.categoryBudgetNameInput.value.trim()] = Number(els.categoryBudgetAmountInput.value);
-    els.categoryBudgetForm.reset();
-    persist();
-  });
+  if (els.categoryBudgetForm) {
+    els.categoryBudgetForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      ensureMonthState(state, selectedMonthKey);
+      state.categoryBudgets[selectedMonthKey][els.categoryBudgetNameInput.value.trim()] = Number(els.categoryBudgetAmountInput.value);
+      els.categoryBudgetForm.reset();
+      persist();
+    });
+  }
 
   ["input", "change"].forEach((eventName) => {
     els.searchInput.addEventListener(eventName, render);
@@ -432,9 +408,15 @@ function bindEvents() {
   els.expenseList.addEventListener("click", handleExpenseActions);
   els.recentExpenseList.addEventListener("click", handleExpenseActions);
   els.incomeList.addEventListener("click", handleDeleteOnly);
-  els.goalList.addEventListener("click", handleDeleteOnly);
-  els.recurringList.addEventListener("click", handleDeleteOnly);
-  els.categoryBudgetList.addEventListener("click", handleDeleteOnly);
+  if (els.goalList) {
+    els.goalList.addEventListener("click", handleDeleteOnly);
+  }
+  if (els.recurringList) {
+    els.recurringList.addEventListener("click", handleDeleteOnly);
+  }
+  if (els.categoryBudgetList) {
+    els.categoryBudgetList.addEventListener("click", handleDeleteOnly);
+  }
 
   els.editForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -446,10 +428,6 @@ function bindEvents() {
     entry.amount = Number(els.editAmountInput.value);
     entry.category = els.editCategoryInput.value.trim();
     entry.date = els.editDateInput.value;
-    entry.paymentMode = els.editPaymentModeInput.value;
-    entry.expenseType = els.editExpenseTypeInput.value;
-    entry.accountSource = els.editAccountSourceInput.value;
-    entry.sourceName = els.editSourceNameInput.value.trim();
     entry.note = els.editNoteInput.value.trim();
     activeEditId = "";
     closeDialog(els.editDialog);
@@ -459,10 +437,6 @@ function bindEvents() {
   els.cancelEditButton.addEventListener("click", () => {
     activeEditId = "";
     closeDialog(els.editDialog);
-  });
-
-  els.closeReceiptButton.addEventListener("click", () => {
-    closeDialog(els.receiptDialog);
   });
 
   els.shareAppButton.addEventListener("click", shareAppLink);
@@ -523,13 +497,7 @@ function render() {
   tone(els.incomeDisplay, "positive");
 
   renderAlerts(els.alertsList, summary, groupedCategories, state.categoryBudgets[selectedMonthKey] || {});
-  renderDayStats(summary, monthExpenses);
-  renderSmartInsights(summary, monthExpenses, groupedCategories);
-  renderQuickCategoryChips(groupedCategories);
-  renderPinnedCategories(monthExpenses);
   renderHomeSmsSection(monthExpenses, monthIncome);
-  renderAccountSnapshot(monthExpenses);
-  renderBillReminders();
   renderRecentExpenses(monthExpenses);
   renderCategoryFilter(els.categoryFilter, monthExpenses);
   renderExpenseList(filteredExpenses);
@@ -537,75 +505,34 @@ function render() {
   renderCreditExpenseList(monthExpenses);
   renderSavingsSection(savingsSummaries);
   renderGoals(els.goalList, state.savingsGoals, savingsSummaries.reduce((total, item) => total + item.saved, 0));
-  renderTrend(els.trendChart, savingsSummaries.slice(0, 6).reverse());
-  renderCategoryChart(els.categoryDonut, els.categoryLegend, groupedCategories);
-  renderLastMonth();
-  renderRecurringList(els.recurringList, els.simpleItemTemplate, state.recurringRules);
-  renderCategoryBudgets(els.categoryBudgetList, selectedMonthKey, state.categoryBudgets[selectedMonthKey] || {}, groupedCategories);
+  if (els.trendChart && els.categoryDonut && els.categoryLegend) {
+    renderTrend(els.trendChart, savingsSummaries.slice(0, 6).reverse());
+    renderCategoryChart(els.categoryDonut, els.categoryLegend, groupedCategories);
+  }
+  if (els.lastMonthSpentDisplay && els.lastMonthSavedDisplay && els.lastMonthCountDisplay && els.lastMonthNote) {
+    renderLastMonth();
+  }
+  if (els.recurringList) {
+    renderRecurringList(els.recurringList, els.simpleItemTemplate, state.recurringRules);
+  }
+  if (els.categoryBudgetList) {
+    renderCategoryBudgets(els.categoryBudgetList, selectedMonthKey, state.categoryBudgets[selectedMonthKey] || {}, groupedCategories);
+  }
   renderSmsPreview();
   renderCloudStatus();
 
   els.expenseListCaption.textContent = `${filteredExpenses.length} expense${filteredExpenses.length === 1 ? "" : "s"} shown for ${formatMonthLabel(selectedMonthKey)}.`;
-  els.recurringStartInput.value = els.recurringStartInput.value || selectedMonthKey;
+  if (els.recurringStartInput) {
+    els.recurringStartInput.value = els.recurringStartInput.value || selectedMonthKey;
+  }
   syncViews();
 }
 
-function renderDayStats(summary, expenses) {
-  const todayKey = toInputDate(new Date());
-  const weekStart = getWeekStart(new Date());
-  const weekEnd = getWeekEnd(new Date());
-  const todaySpend = sum(expenses.filter((item) => item.date === todayKey));
-  const weekSpend = sum(expenses.filter((item) => item.date >= weekStart && item.date <= weekEnd));
-  els.todaySpendDisplay.textContent = formatCurrency(todaySpend);
-  els.weekSpendDisplay.textContent = formatCurrency(weekSpend);
-  els.dailyAverageDisplay.textContent = formatCurrency(summary.dailyAverage);
-  els.streakDisplay.textContent = `${calculateStreak()} days`;
-  tone(els.todaySpendDisplay, todaySpend > 0 ? "negative" : "positive");
-  tone(els.weekSpendDisplay, weekSpend > summary.budget / 4 ? "warning" : "negative");
-}
-
-function renderSmartInsights(summary, expenses, groupedCategories) {
-  const biggest = expenses.reduce((max, item) => (!max || item.amount > max.amount ? item : max), null);
-  const topCategory = groupedCategories[0];
-  const wants = sum(expenses.filter((item) => item.expenseType === "want"));
-  const needs = sum(expenses.filter((item) => item.expenseType !== "want"));
-  const expected = Math.round(summary.dailyAverage * getDaysInMonth(summary.monthKey));
-  const insights = [];
-
-  els.highestCategoryDisplay.textContent = topCategory ? `${topCategory.category} ${formatCurrency(topCategory.total)}` : "-";
-  els.biggestExpenseDisplay.textContent = biggest ? `${biggest.title} ${formatCurrency(biggest.amount)}` : "-";
-  els.expectedSpendDisplay.textContent = formatCurrency(expected);
-  els.needWantDisplay.textContent = `${formatCurrency(needs)} / ${formatCurrency(wants)}`;
-  tone(els.expectedSpendDisplay, expected > summary.budget ? "negative" : "positive");
-
-  if (summary.remaining < 0) {
-    insights.push(`You are over the month budget by ${formatCurrency(Math.abs(summary.remaining))}.`);
-  } else {
-    insights.push(`You still have ${formatCurrency(summary.remaining)} left in this month.`);
-  }
-  if (topCategory) {
-    insights.push(`${topCategory.category} is the top spending category this month.`);
-  }
-  if (expected > summary.budget) {
-    insights.push(`At this pace, month-end spend may reach ${formatCurrency(expected)}.`);
-  }
-  if (wants > needs && expenses.length) {
-    insights.push("Want spending is currently higher than need spending.");
-  }
-
-  els.smartInsightsList.innerHTML = "";
-  insights.forEach((text) => {
-    const node = document.createElement("div");
-    node.className = "list-item simple-item";
-    node.textContent = text;
-    els.smartInsightsList.appendChild(node);
-  });
-  if (!insights.length) {
-    els.smartInsightsList.appendChild(emptyState("Insights will appear as soon as you add more transactions."));
-  }
-}
-
 function renderQuickCategoryChips(groupedCategories) {
+  if (!els.quickCategoryChips) {
+    return;
+  }
+  const quickCategories = ["Food", "Travel", "Bills", "Shopping", "Health", "Family"];
   const favorites = [...new Set([...groupedCategories.map((item) => item.category), ...quickCategories])].slice(0, 6);
   els.quickCategoryChips.innerHTML = "";
   favorites.forEach((category) => {
@@ -621,6 +548,9 @@ function renderQuickCategoryChips(groupedCategories) {
 }
 
 function renderAddShortcuts() {
+  if (!els.amountShortcutChips) {
+    return;
+  }
   els.amountShortcutChips.innerHTML = "";
   amountShortcuts.forEach((amount) => {
     const button = document.createElement("button");
@@ -635,18 +565,21 @@ function renderAddShortcuts() {
     els.amountShortcutChips.appendChild(button);
   });
 
-  els.addCategoryShortcutChips.innerHTML = "";
-  quickCategories.forEach((category) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "quick-chip";
-    button.textContent = category;
-    button.addEventListener("click", () => {
-      moveToQuickExpense(category);
-      highlightSelection(els.addCategoryShortcutChips, button);
+  if (els.addCategoryShortcutChips) {
+    const quickCategories = ["Food", "Travel", "Bills", "Shopping", "Health", "Family"];
+    els.addCategoryShortcutChips.innerHTML = "";
+    quickCategories.forEach((category) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "quick-chip";
+      button.textContent = category;
+      button.addEventListener("click", () => {
+        moveToQuickExpense(category);
+        highlightSelection(els.addCategoryShortcutChips, button);
+      });
+      els.addCategoryShortcutChips.appendChild(button);
     });
-    els.addCategoryShortcutChips.appendChild(button);
-  });
+  }
 }
 
 function moveToQuickExpense(category) {
@@ -668,6 +601,9 @@ function highlightSelection(container, activeButton) {
 }
 
 function highlightMatchingCategoryShortcut(category) {
+  if (!els.addCategoryShortcutChips) {
+    return;
+  }
   const match = [...els.addCategoryShortcutChips.querySelectorAll(".quick-chip")].find((button) => button.textContent === category);
   if (match) {
     highlightSelection(els.addCategoryShortcutChips, match);
@@ -675,6 +611,9 @@ function highlightMatchingCategoryShortcut(category) {
 }
 
 function renderPinnedCategories(expenses) {
+  if (!els.pinnedCategoryList) {
+    return;
+  }
   const top = groupByCategory(expenses).slice(0, 4);
   els.pinnedCategoryList.innerHTML = "";
   if (!top.length) {
@@ -690,6 +629,9 @@ function renderPinnedCategories(expenses) {
 }
 
 function renderAccountSnapshot(expenses) {
+  if (!els.bankSpendDisplay) {
+    return;
+  }
   const bankSpend = sum(expenses.filter((item) => item.accountSource === "bank-account" || item.accountSource === "debit-card"));
   const creditSpend = sum(expenses.filter((item) => item.accountSource === "credit-card"));
   const otherSpend = sum(expenses.filter((item) => item.accountSource !== "bank-account" && item.accountSource !== "debit-card" && item.accountSource !== "credit-card"));
@@ -726,6 +668,9 @@ function renderHomeSmsSection(expenses, incomeEntries) {
 }
 
 function renderBillReminders() {
+  if (!els.billReminderList) {
+    return;
+  }
   const reminders = state.recurringRules
     .filter((item) => item.kind === "expense" && item.active !== false)
     .sort((a, b) => a.day - b.day)
@@ -762,8 +707,8 @@ function renderExpenseCollection(container, expenses, emptyMessage) {
     const article = fragment.querySelector(".list-item");
     article.dataset.id = entry.id;
     fragment.querySelector("h4").textContent = entry.title;
-    fragment.querySelector(".chip").textContent = `${entry.category} | ${accountSourceLabel(entry.accountSource || "other")}`;
-    fragment.querySelector(".item-meta").textContent = `${formatDate(entry.date)} | ${entry.paymentMode || "UPI"} | ${entry.expenseType === "want" ? "Want" : "Need"}${entry.sourceName ? ` | ${entry.sourceName}` : ""}${entry.smsImported ? " | SMS" : ""}${entry.recurringKey ? " | Recurring" : ""}`;
+    fragment.querySelector(".chip").textContent = entry.category;
+    fragment.querySelector(".item-meta").textContent = `${formatDate(entry.date)}${entry.smsImported ? " | Imported from SMS" : ""}${entry.sourceName ? ` | ${entry.sourceName}` : ""}`;
     const note = fragment.querySelector(".item-note");
     if (entry.note) {
       note.hidden = false;
@@ -775,9 +720,6 @@ function renderExpenseCollection(container, expenses, emptyMessage) {
     fragment.querySelectorAll("button").forEach((button) => {
       button.dataset.id = entry.id;
       button.dataset.kind = "expense";
-      if (button.dataset.action === "receipt" && !entry.receiptDataUrl) {
-        button.disabled = true;
-      }
     });
     container.appendChild(fragment);
   });
@@ -858,11 +800,6 @@ function handleExpenseActions(event) {
     openEditEntry(entry);
     return;
   }
-  if (button.dataset.action === "receipt" && entry.receiptDataUrl) {
-    els.receiptDialogTitle.textContent = entry.receiptName || `${entry.title} receipt`;
-    els.receiptPreviewImage.src = entry.receiptDataUrl;
-    openDialog(els.receiptDialog);
-  }
 }
 
 function openEditEntry(entry) {
@@ -871,10 +808,6 @@ function openEditEntry(entry) {
   els.editAmountInput.value = entry.amount;
   els.editCategoryInput.value = entry.category;
   els.editDateInput.value = entry.date;
-  els.editPaymentModeInput.value = entry.paymentMode || "UPI";
-  els.editExpenseTypeInput.value = entry.expenseType || "need";
-  els.editAccountSourceInput.value = entry.accountSource || "bank-account";
-  els.editSourceNameInput.value = entry.sourceName || "";
   els.editNoteInput.value = entry.note || "";
   openDialog(els.editDialog);
 }
@@ -1003,45 +936,27 @@ function listMonths() {
   return getMonthOptions(state, selectedMonthKey).sort((a, b) => b.localeCompare(a));
 }
 
-function calculateStreak() {
-  const days = [...new Set(state.expenses.map((item) => item.date))].sort((a, b) => b.localeCompare(a));
-  let streak = 0;
-  let cursor = new Date();
-  while (days.includes(toInputDate(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
-function getWeekStart(date) {
-  const current = new Date(date);
-  const offset = (current.getDay() + 6) % 7;
-  current.setDate(current.getDate() - offset);
-  return toInputDate(current);
-}
-
-function getWeekEnd(date) {
-  const current = new Date(getWeekStart(date));
-  current.setDate(current.getDate() + 6);
-  return toInputDate(current);
-}
-
 function setDefaultDates() {
   const today = toInputDate(new Date());
   els.dateInput.value = today;
   els.incomeDateInput.value = today;
-  els.recurringStartInput.value = selectedMonthKey;
+  if (els.recurringStartInput) {
+    els.recurringStartInput.value = selectedMonthKey;
+  }
 }
 
 function resetExpenseForm() {
-  pendingReceiptData = "";
-  pendingReceiptName = "";
   els.expenseForm.reset();
   els.dateInput.value = toInputDate(new Date());
-  els.paymentModeInput.value = "UPI";
-  els.accountSourceInput.value = "bank-account";
-  els.expenseTypeInput.value = "need";
+  if (els.paymentModeInput) {
+    els.paymentModeInput.value = "UPI";
+  }
+  if (els.accountSourceInput) {
+    els.accountSourceInput.value = "bank-account";
+  }
+  if (els.expenseTypeInput) {
+    els.expenseTypeInput.value = "need";
+  }
   [...document.querySelectorAll(".quick-chip.is-selected, .chip.is-selected")].forEach((button) => {
     button.classList.remove("is-selected");
   });
@@ -1114,7 +1029,7 @@ function saveCloudSettings() {
   resetCloudContext();
   persist();
   els.cloudStatusNote.textContent = state.cloudSync.firebaseConfigText && state.cloudSync.documentPath
-    ? "Cloud setup saved. You can now push or pull your data."
+    ? "Cloud setup saved. You can now push or pull your data. Full Firebase config blocks are also supported."
     : "Cloud sync is not configured yet.";
 }
 
@@ -1198,7 +1113,8 @@ function previewSmsImports() {
     els.smsImportStatus.textContent = "No valid bank or card SMS was detected. Paste complete transaction messages with an amount like INR 1,250.";
   } else {
     const importableCount = smsPreviewEntries.filter((item) => item.status === "ready").length;
-    els.smsImportStatus.textContent = `${smsPreviewEntries.length} SMS parsed. ${importableCount} ready to import. Duplicates will be skipped.`;
+    const suspiciousCount = smsPreviewEntries.filter((item) => item.parsed && item.parsed.suspicious).length;
+    els.smsImportStatus.textContent = `${smsPreviewEntries.length} bank SMS parsed. ${importableCount} ready to import.${suspiciousCount ? ` ${suspiciousCount} suspicious message${suspiciousCount === 1 ? "" : "s"} need review.` : ""} OTP and non-bank messages are ignored.`;
   }
   renderSmsPreview();
 }
@@ -1216,39 +1132,7 @@ function importSmsEntries() {
     if (item.status !== "ready" || !item.parsed) {
       return;
     }
-    if (item.parsed.kind === "income") {
-      state.incomeEntries.unshift({
-        id: createId(),
-        title: item.parsed.title,
-        amount: item.parsed.amount,
-        source: item.parsed.source,
-        date: item.parsed.date,
-        note: item.parsed.note,
-        recurringKey: "",
-        sourceName: item.parsed.sourceName,
-        accountSource: item.parsed.accountSource,
-        smsImported: true,
-        smsSignature: item.parsed.smsSignature,
-      });
-    } else {
-      state.expenses.unshift({
-        id: createId(),
-        title: item.parsed.title,
-        amount: item.parsed.amount,
-        category: item.parsed.category,
-        date: item.parsed.date,
-        paymentMode: item.parsed.paymentMode,
-        accountSource: item.parsed.accountSource,
-        sourceName: item.parsed.sourceName,
-        expenseType: "need",
-        note: item.parsed.note,
-        receiptDataUrl: "",
-        receiptName: "",
-        recurringKey: "",
-        smsImported: true,
-        smsSignature: item.parsed.smsSignature,
-      });
-    }
+    saveParsedSmsEntry(item.parsed);
     item.status = "imported";
     imported += 1;
   });
@@ -1275,7 +1159,14 @@ function renderSmsPreview() {
       els.smsImportList.appendChild(row);
       return;
     }
-    row.innerHTML = `<div class="list-copy"><div class="item-heading"><h4>${item.parsed.title}</h4><span class="chip">${item.status === "duplicate" ? "Duplicate" : item.parsed.kind === "income" ? "Income" : accountSourceLabel(item.parsed.accountSource)}</span></div><p class="item-meta">${formatDate(item.parsed.date)} | ${item.parsed.sourceName || item.parsed.source || item.parsed.category} | ${item.parsed.note}</p></div><div class="list-actions"><strong class="${item.parsed.kind === "income" ? "positive" : "negative"}">${formatCurrency(item.parsed.amount)}</strong></div>`;
+    const chipLabel = item.status === "duplicate"
+      ? "Duplicate"
+      : item.parsed.suspicious
+        ? "Review"
+        : item.parsed.kind === "income"
+          ? "Income"
+          : accountSourceLabel(item.parsed.accountSource);
+    row.innerHTML = `<div class="list-copy"><div class="item-heading"><h4>${item.parsed.title}</h4><span class="chip">${chipLabel}</span></div><p class="item-meta">${formatDate(item.parsed.date)} | ${item.parsed.sourceName || item.parsed.source || item.parsed.category}${item.parsed.sender ? ` | ${item.parsed.sender}` : ""}</p></div><div class="list-actions"><strong class="${item.parsed.kind === "income" ? "positive" : "negative"}">${formatCurrency(item.parsed.amount)}</strong></div>`;
     els.smsImportList.appendChild(row);
   });
 }
@@ -1288,6 +1179,58 @@ function buildSmsPreviewEntries(text) {
     }
     const isDuplicate = hasSmsDuplicate(parsed.smsSignature);
     return { raw, parsed, status: isDuplicate ? "duplicate" : "ready" };
+  });
+}
+
+function autoImportTrustedSms(messages) {
+  let imported = 0;
+  messages.forEach((item) => {
+    const parsed = parseSmsMessage(item);
+    if (!parsed || !parsed.autoImportEligible || hasSmsDuplicate(parsed.smsSignature)) {
+      return;
+    }
+    saveParsedSmsEntry(parsed);
+    imported += 1;
+  });
+  if (imported) {
+    persist();
+  }
+  return imported;
+}
+
+function saveParsedSmsEntry(parsed) {
+  if (parsed.kind === "income") {
+    state.incomeEntries.unshift({
+      id: createId(),
+      title: parsed.title,
+      amount: parsed.amount,
+      source: parsed.source,
+      date: parsed.date,
+      note: parsed.note,
+      recurringKey: "",
+      sourceName: parsed.sourceName,
+      accountSource: parsed.accountSource,
+      smsImported: true,
+      smsSignature: parsed.smsSignature,
+    });
+    return;
+  }
+  state.expenses.unshift({
+    id: createId(),
+    title: parsed.title,
+    amount: parsed.amount,
+    category: parsed.category,
+    date: parsed.date,
+    paymentMode: parsed.paymentMode,
+    accountSource: parsed.accountSource,
+    sourceName: parsed.sourceName,
+    expenseType: "need",
+    note: parsed.note,
+    receiptDataUrl: "",
+    receiptName: "",
+    recurringKey: "",
+    smsImported: true,
+    smsSignature: parsed.smsSignature,
   });
 }
 

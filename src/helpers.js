@@ -1,5 +1,10 @@
 export const DEFAULT_BUDGET = 0;
 export const COLORS = ["#1f5eff", "#1f8f55", "#d98d23", "#d64545", "#7a5cff", "#0ea5a4", "#ef6a3c"];
+export const KNOWN_BANK_SENDERS = [
+  "HDFCBK", "HDFC", "ICICIB", "ICICI", "SBIINB", "SBI", "AXISBK", "AXIS",
+  "KOTAKB", "KOTAK", "IDFCFB", "IDFC", "INDUSB", "YESBNK", "BOB", "PNBSMS",
+  "CANBNK", "UNIONB", "RBLBNK", "HSBCIN", "AMEX", "CITI", "SCBANK", "PAYTMB"
+];
 
 export function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -118,13 +123,18 @@ export function escapeAttribute(value) {
   return String(value == null ? "" : value).split('"').join("&quot;");
 }
 
-export function parseSmsMessage(text) {
-  const message = String(text || "").trim();
+export function parseSmsMessage(input) {
+  const sms = normalizeSmsInput(input);
+  const message = sms.body;
   if (!message) {
     return null;
   }
 
   const lower = message.toLowerCase();
+  const sender = sms.sender;
+  if (isOtpMessage(lower) || !isLikelyBankSender(sender)) {
+    return null;
+  }
   const amountMatch = message.match(/(?:inr|rs\.?|mrp)\s*([0-9,]+(?:\.\d{1,2})?)/i);
   const amount = amountMatch ? Number(amountMatch[1].split(",").join("")) : 0;
   if (!amount) {
@@ -134,11 +144,14 @@ export function parseSmsMessage(text) {
   const accountSource = detectAccountSource(lower);
   const sourceName = detectSourceName(message, accountSource);
   const merchant = detectMerchant(message);
-  const date = detectMessageDate(message);
+  const date = detectMessageDate(message, sms.date);
   const isIncome = /\b(credited|received|deposit|deposited|refund)\b/i.test(lower) && !/\bdebit(ed)?\b/i.test(lower);
   const title = isIncome ? "SMS Income" : merchant || "SMS Expense";
   const paymentMode = detectPaymentMode(lower, accountSource);
   const notePrefix = isIncome ? "Imported from SMS income alert." : "Imported from SMS debit alert.";
+  const senderKnown = isKnownBankSender(sender);
+  const bankSignal = hasBankSignal(lower);
+  const suspicious = !senderKnown || !merchant || !bankSignal;
   const smsSignature = [
     isIncome ? "income" : "expense",
     date,
@@ -146,6 +159,7 @@ export function parseSmsMessage(text) {
     merchant || title,
     accountSource,
     sourceName,
+    sender,
   ].join("|").toLowerCase();
 
   return {
@@ -158,10 +172,27 @@ export function parseSmsMessage(text) {
     accountSource,
     paymentMode,
     date,
-    note: `${notePrefix} ${message}`,
+    note: notePrefix,
     smsImported: true,
     smsSignature,
+    sender,
+    senderKnown,
+    suspicious,
+    autoImportEligible: senderKnown && bankSignal && accountSource !== "other" && !suspicious,
+    rawMessage: message,
   };
+}
+
+export function isKnownBankSender(sender) {
+  const value = String(sender || "").toUpperCase();
+  if (!value) {
+    return false;
+  }
+  return KNOWN_BANK_SENDERS.some((item) => value.includes(item));
+}
+
+export function isLikelyBankSender(sender) {
+  return isKnownBankSender(sender);
 }
 
 export function accountSourceLabel(value) {
@@ -251,10 +282,10 @@ function cleanMerchant(value) {
     .trim();
 }
 
-function detectMessageDate(message) {
+function detectMessageDate(message, fallbackDate) {
   const match = message.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})\b/);
   if (!match) {
-    return toInputDate(new Date());
+    return fallbackDate ? toInputDate(new Date(fallbackDate)) : toInputDate(new Date());
   }
   const day = Number(match[1]);
   const month = Number(match[2]);
@@ -263,6 +294,32 @@ function detectMessageDate(message) {
     year += 2000;
   }
   return toInputDate(new Date(year, month - 1, day));
+}
+
+function normalizeSmsInput(input) {
+  if (typeof input === "string") {
+    return {
+      body: input.trim(),
+      sender: "",
+      date: "",
+    };
+  }
+  if (input && typeof input === "object") {
+    return {
+      body: String(input.body || input.message || "").trim(),
+      sender: String(input.address || input.sender || "").trim(),
+      date: input.date || "",
+    };
+  }
+  return { body: "", sender: "", date: "" };
+}
+
+function hasBankSignal(lower) {
+  return /\b(debited|credited|spent|purchase|txn|transaction|upi|withdrawn|received|payment|pos)\b/.test(lower);
+}
+
+function isOtpMessage(lower) {
+  return /\botp\b|\bone time password\b|\bverification code\b|\bauthentication code\b|\blogin code\b/.test(lower);
 }
 
 function categorizeMerchant(merchant, lower) {
