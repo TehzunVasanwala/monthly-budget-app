@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="description" content="A simple mobile-first monthly budget app for everyday expense tracking.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+  <link rel="stylesheet" href="styles.css">
+  <title>Monthly Budget</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Pocket budget planner</p>
+        <h1>Monthly Budget</h1>
+        <p class="header-copy">Fast daily tracking with a simpler dashboard.</p>
+      </div>
+      <button class="install-btn" id="installButton" hidden type="button">Install</button>
+    </header>
+
+    <nav class="page-tabs" aria-label="Main navigation">
+      <button class="nav-btn is-active" type="button" data-view-btn="home"><span class="nav-label">Home</span></button>
+      <button class="nav-btn" type="button" data-view-btn="add"><span class="nav-label">Add</span></button>
+      <button class="nav-btn" type="button" data-view-btn="history"><span class="nav-label">History</span></button>
+      <button class="nav-btn" type="button" data-view-btn="goals"><span class="nav-label">Goals</span></button>
+      <button class="nav-btn" type="button" data-view-btn="more"><span class="nav-label">More</span></button>
+    </nav>
+
+    <main class="app-main">
+      <section class="view is-active" data-view="home">
+        <section class="card hero-card">
+          <div class="hero-top">
+            <div>
+              <p class="label">Selected Month</p>
+              <h2 id="selectedMonthTitle">This Month</h2>
+            </div>
+            <div class="hero-actions-inline">
+              <select id="monthFilter" class="select-inline"></select>
+              <button class="ghost-btn" id="saveMonthSettingsButton" type="button">Save Budget</button>
+            </div>
+          </div>
+
+          <div class="hero-grid">
+            <article class="summary-card primary-card summary-left">
+              <p class="label">Remaining Budget</p>
+              <strong id="budgetLeftDisplay">0</strong>
+              <span class="note-text" id="monthSettingsNote">Set your budget for the selected month.</span>
+            </article>
+            <article class="summary-card summary-spent">
+              <p class="label">Spent This Month</p>
+              <strong id="spentDisplay">0</strong>
+            </article>
+            <article class="summary-card summary-saved">
+              <p class="label">Saved This Month</p>
+              <strong id="savedDisplay">0</strong>
+            </article>
+            <article class="summary-card summary-income">
+              <p class="label">Income This Month</p>
+              <strong id="incomeDisplay">0</strong>
+            </article>
+          </div>
+
+          <div class="progress-block">
+            <div class="progress-meta">
+              <span>Budget used</span>
+              <span id="progressText">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="alerts-list" id="alertsList"></div>
+        </section>
+
+        <section class="card mini-stats-card accent-teal">
+          <div class="section-head">
+            <h3>Today, Week, Month</h3>
+            <p>Your quick daily snapshot.</p>
+          </div>
+          <div class="stats-grid">
+            <article class="summary-card">
+              <p class="label">Today</p>
+              <strong id="todaySpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">This Week</p>
+              <strong id="weekSpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Daily Average</p>
+              <strong id="dailyAverageDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Logging Streak</p>
+              <strong id="streakDisplay">0 days</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="card accent-violet sms-home-card">
+          <div class="section-head">
+            <h3>SMS Tracking</h3>
+            <p>Keep imported bank and card alerts visible right on the home page.</p>
+          </div>
+          <div class="stats-grid compact-grid">
+            <article class="summary-card">
+              <p class="label">Imported This Month</p>
+              <strong id="smsImportedCountHomeDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Bank / Debit SMS</p>
+              <strong id="smsBankCountDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Credit Card SMS</p>
+              <strong id="smsCreditCountDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Last Import</p>
+              <strong id="smsLastImportDisplay">-</strong>
+            </article>
+          </div>
+          <div class="quick-action-bar">
+            <button class="primary-btn action-btn" id="openSmsImportButton" type="button">Open SMS Import</button>
+            <button class="ghost-btn action-btn" id="openCreditHistoryButton" type="button">View Credit Activity</button>
+          </div>
+          <div id="smsHomeList" class="stack-list compact-list"></div>
+        </section>
+
+        <section class="card accent-sky">
+          <div class="section-head">
+            <h3>Account Snapshot</h3>
+            <p>See what went from bank or debit, credit card, and other sources.</p>
+          </div>
+          <div class="stats-grid compact-grid">
+            <article class="summary-card">
+              <p class="label">Bank / Debit</p>
+              <strong id="bankSpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Credit Card</p>
+              <strong id="creditSpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Cash / UPI / Other</p>
+              <strong id="otherSpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">SMS Imported</p>
+              <strong id="smsImportedCountDisplay">0</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="card recent-card accent-lime">
+          <div class="section-head">
+            <h3>Recent Expenses</h3>
+            <p>Last few items from this month.</p>
+          </div>
+          <div id="recentExpenseList" class="stack-list"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view="add">
+        <section class="card add-card">
+          <div class="section-head">
+            <h3>Add Expense</h3>
+            <p>Fast form for everyday tracking.</p>
+          </div>
+          <div class="quick-add-panel">
+            <div>
+              <p class="label">Quick Amounts</p>
+              <p class="shortcut-note">Tap once to fill the amount instantly.</p>
+              <div id="amountShortcutChips" class="chip-wrap amount-chip-wrap"></div>
+            </div>
+            <div>
+              <p class="label">Quick Categories</p>
+              <p class="shortcut-note">Tap once to prefill category and title.</p>
+              <div id="addCategoryShortcutChips" class="chip-wrap amount-chip-wrap"></div>
+            </div>
+          </div>
+          <form id="expenseForm" class="entry-form">
+            <label>
+              <span>Expense Title</span>
+              <input id="titleInput" name="title" type="text" placeholder="Groceries" required>
+            </label>
+            <div class="grid-two">
+              <label>
+                <span>Amount</span>
+                <input id="amountInput" name="amount" type="number" min="1" step="1" placeholder="1500" required>
+              </label>
+              <label>
+                <span>Category</span>
+                <select id="categoryInput" name="category">
+                  <option>Food</option>
+                  <option>Travel</option>
+                  <option>Bills</option>
+                  <option>Shopping</option>
+                  <option>Health</option>
+                  <option>Family</option>
+                  <option>Education</option>
+                  <option>Entertainment</option>
+                  <option>Other</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid-two">
+              <label>
+                <span>Date</span>
+                <input id="dateInput" name="date" type="date" required>
+              </label>
+              <label>
+                <span>Payment Mode</span>
+                <select id="paymentModeInput" name="paymentMode">
+                  <option>UPI</option>
+                  <option>Cash</option>
+                  <option>Card</option>
+                  <option>Bank</option>
+                  <option>Wallet</option>
+                  <option>Other</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid-two">
+              <label>
+                <span>Account Type</span>
+                <select id="accountSourceInput" name="accountSource">
+                  <option value="bank-account">Bank Account</option>
+                  <option value="debit-card">Debit Card</option>
+                  <option value="credit-card">Credit Card</option>
+                  <option value="upi">UPI</option>
+                  <option value="cash">Cash</option>
+                  <option value="wallet">Wallet</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label>
+                <span>Account / Last 4</span>
+                <input id="sourceNameInput" name="sourceName" type="text" placeholder="HDFC 1234">
+              </label>
+            </div>
+            <div class="grid-two">
+              <label>
+                <span>Type</span>
+                <select id="expenseTypeInput" name="expenseType">
+                  <option value="need">Need</option>
+                  <option value="want">Want</option>
+                </select>
+              </label>
+              <label>
+                <span>Receipt Image</span>
+                <input id="receiptInput" name="receipt" type="file" accept="image/*">
+              </label>
+            </div>
+            <label>
+              <span>Note</span>
+              <textarea id="noteInput" name="note" rows="3" placeholder="Optional note"></textarea>
+            </label>
+            <button class="primary-btn full-btn" type="submit">Save Expense</button>
+          </form>
+        </section>
+
+        <section class="card income-card">
+          <div class="section-head">
+            <h3>Add Income</h3>
+            <p>Add salary, freelance, bonus, cashback, or any other income source.</p>
+          </div>
+          <form id="incomeForm" class="entry-form">
+            <label>
+              <span>Income Title</span>
+              <input id="incomeTitleInput" name="title" type="text" placeholder="Salary" required>
+            </label>
+            <div class="grid-two">
+              <label>
+                <span>Amount</span>
+                <input id="incomeAmountInput" name="amount" type="number" min="1" step="1" placeholder="50000" required>
+              </label>
+              <label>
+                <span>Source</span>
+                <input id="incomeSourceInput" name="source" type="text" placeholder="Office salary" required>
+              </label>
+            </div>
+            <label>
+              <span>Date</span>
+              <input id="incomeDateInput" name="date" type="date" required>
+            </label>
+            <label>
+              <span>Note</span>
+              <textarea id="incomeNoteInput" name="note" rows="3" placeholder="Optional note"></textarea>
+            </label>
+            <button class="primary-btn full-btn" type="submit">Save Income</button>
+          </form>
+        </section>
+      </section>
+
+      <section class="view" data-view="history">
+        <section class="card filters-card">
+          <div class="section-head">
+            <h3>Search And Filters</h3>
+            <p>Search by title, category, note, or date range.</p>
+          </div>
+          <div class="grid-four">
+            <label>
+              <span>Search</span>
+              <input id="searchInput" type="text" placeholder="Groceries, EMI, note">
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="categoryFilter">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <label>
+              <span>From</span>
+              <input id="fromDateFilter" type="date">
+            </label>
+            <label>
+              <span>To</span>
+              <input id="toDateFilter" type="date">
+            </label>
+          </div>
+        </section>
+
+        <section class="card expenses-card">
+          <div class="section-head expenses-head">
+            <div>
+              <h3>Expenses</h3>
+              <p id="expenseListCaption">Entries for the selected month.</p>
+            </div>
+            <button class="danger-btn" id="clearButton" type="button">Clear Selected Month</button>
+          </div>
+          <div id="expenseList" class="stack-list"></div>
+        </section>
+
+        <section class="card income-list-card">
+          <div class="section-head">
+            <h3>Income History</h3>
+            <p>Your income sources for the selected month.</p>
+          </div>
+          <div id="incomeList" class="stack-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h3>Credit Card Activity</h3>
+            <p>Separate view of expenses tagged as credit card transactions.</p>
+          </div>
+          <div id="creditExpenseList" class="stack-list"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view="goals">
+        <section class="card savings-card">
+          <div class="section-head">
+            <h3>Savings Dashboard</h3>
+            <p>Your month-by-month savings overview.</p>
+          </div>
+          <div class="stats-grid compact-grid">
+            <article class="summary-card">
+              <p class="label">Total Savings</p>
+              <strong id="totalSavingsDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Months Tracked</p>
+              <strong id="trackedMonthsDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Best Saving Month</p>
+              <strong id="bestMonthDisplay">-</strong>
+            </article>
+          </div>
+          <div id="savingsHistoryList" class="stack-list"></div>
+        </section>
+
+        <section class="card goals-card">
+          <div class="section-head">
+            <h3>Savings Goals</h3>
+            <p>Track goals like Trip, Emergency Fund, New Phone, or investments.</p>
+          </div>
+          <form id="goalForm" class="entry-form">
+            <label>
+              <span>Goal Name</span>
+              <input id="goalNameInput" name="name" type="text" placeholder="Emergency Fund" required>
+            </label>
+            <div class="grid-three">
+              <label>
+                <span>Target</span>
+                <input id="goalTargetInput" name="target" type="number" min="1" step="1" placeholder="100000" required>
+              </label>
+              <label>
+                <span>Saved So Far</span>
+                <input id="goalSavedInput" name="saved" type="number" min="0" step="1" placeholder="25000" required>
+              </label>
+              <label>
+                <span>Deadline</span>
+                <input id="goalDeadlineInput" name="deadline" type="date">
+              </label>
+            </div>
+            <label>
+              <span>Note</span>
+              <textarea id="goalNoteInput" name="note" rows="2" placeholder="Optional goal note"></textarea>
+            </label>
+            <button class="primary-btn full-btn" type="submit">Add Goal</button>
+          </form>
+          <div id="goalList" class="goal-list"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view="more">
+        <section class="card reports-card">
+          <div class="section-head">
+            <h3>Charts And Reports</h3>
+            <p>Visual view of spending trend and category mix.</p>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-panel trend-panel">
+              <div class="chart-head">
+                <h4>Monthly Trend</h4>
+                <p>Last 6 months</p>
+              </div>
+              <div id="trendChart" class="trend-chart"></div>
+            </div>
+            <div class="chart-panel donut-panel">
+              <div class="chart-head">
+                <h4>Category Split</h4>
+                <p>Selected month</p>
+              </div>
+              <div class="donut-wrap">
+                <div id="categoryDonut" class="donut-chart"></div>
+                <div id="categoryLegend" class="donut-legend"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card last-month-card">
+          <div class="section-head">
+            <h3>Last Month Snapshot</h3>
+            <p>Quick view of what happened in the previous month.</p>
+          </div>
+          <div class="stats-grid compact-grid">
+            <article class="summary-card">
+              <p class="label">Last Month Spent</p>
+              <strong id="lastMonthSpentDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Last Month Saved</p>
+              <strong id="lastMonthSavedDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Last Month Entries</p>
+              <strong id="lastMonthCountDisplay">0</strong>
+            </article>
+          </div>
+          <p class="status-note" id="lastMonthNote">No expense history for last month yet.</p>
+        </section>
+
+        <section class="card recurring-card">
+          <div class="section-head">
+            <h3>Recurring Entries</h3>
+            <p>Automatically add monthly rent, EMI, subscriptions, salary, and bills.</p>
+          </div>
+          <form id="recurringForm" class="entry-form">
+            <div class="grid-two">
+              <label>
+                <span>Type</span>
+                <select id="recurringKindInput" name="kind">
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </label>
+              <label>
+                <span>Title</span>
+                <input id="recurringTitleInput" name="title" type="text" placeholder="Rent" required>
+              </label>
+            </div>
+            <div class="grid-three">
+              <label>
+                <span>Amount</span>
+                <input id="recurringAmountInput" name="amount" type="number" min="1" step="1" placeholder="12000" required>
+              </label>
+              <label>
+                <span>Category / Source</span>
+                <input id="recurringCategoryInput" name="category" type="text" placeholder="Bills or Salary" required>
+              </label>
+              <label>
+                <span>Day Of Month</span>
+                <input id="recurringDayInput" name="day" type="number" min="1" max="28" placeholder="5" required>
+              </label>
+            </div>
+            <label>
+              <span>Start Month</span>
+              <input id="recurringStartInput" name="startMonth" type="month" required>
+            </label>
+            <label>
+              <span>Note</span>
+              <textarea id="recurringNoteInput" name="note" rows="2" placeholder="Optional recurring note"></textarea>
+            </label>
+            <button class="primary-btn full-btn" type="submit">Add Recurring Rule</button>
+          </form>
+          <div id="recurringList" class="stack-list"></div>
+        </section>
+
+        <section class="card category-budget-card">
+          <div class="section-head">
+            <h3>Category Budgets</h3>
+            <p>Set limits like Food 10,000, Travel 5,000, Shopping 3,000.</p>
+          </div>
+          <form id="categoryBudgetForm" class="entry-form">
+            <div class="grid-two">
+              <label>
+                <span>Category</span>
+                <input id="categoryBudgetNameInput" name="category" type="text" placeholder="Food" required>
+              </label>
+              <label>
+                <span>Budget</span>
+                <input id="categoryBudgetAmountInput" name="amount" type="number" min="1" step="1" placeholder="10000" required>
+              </label>
+            </div>
+            <button class="primary-btn full-btn" type="submit">Save Category Budget</button>
+          </form>
+          <div id="categoryBudgetList" class="stack-list"></div>
+        </section>
+
+        <section class="card export-card">
+          <div class="section-head">
+            <h3>Share And Export</h3>
+            <p>Share the app link or download your report as Excel CSV.</p>
+          </div>
+          <div class="stack-actions">
+            <button class="primary-btn full-btn" id="shareAppButton" type="button">Share App Link</button>
+            <button class="ghost-btn full-btn" id="exportCsvButton" type="button">Export Excel CSV</button>
+          </div>
+          <p class="status-note" id="shareAppStatus">Share this app with your phone contacts or copy the live link on desktop.</p>
+        </section>
+
+        <section class="card insights-card accent-amber">
+          <div class="section-head">
+            <h3>Smart Insights</h3>
+            <p>Simple things worth watching.</p>
+          </div>
+          <div class="stats-grid">
+            <article class="summary-card">
+              <p class="label">Highest Category</p>
+              <strong id="highestCategoryDisplay">-</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Biggest Expense</p>
+              <strong id="biggestExpenseDisplay">-</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Expected Month End</p>
+              <strong id="expectedSpendDisplay">0</strong>
+            </article>
+            <article class="summary-card">
+              <p class="label">Need vs Want</p>
+              <strong id="needWantDisplay">-</strong>
+            </article>
+          </div>
+          <div id="smartInsightsList" class="stack-list compact-list"></div>
+        </section>
+
+        <section class="card quick-card accent-violet">
+          <div class="section-head">
+            <h3>Quick Add</h3>
+            <p>Tap a category and jump straight to adding an expense.</p>
+          </div>
+          <div id="quickCategoryChips" class="chip-wrap"></div>
+        </section>
+
+        <section class="card pinned-card accent-sky">
+          <div class="section-head">
+            <h3>Pinned Categories</h3>
+            <p>Your most-used categories show up here for fast access.</p>
+          </div>
+          <div id="pinnedCategoryList" class="stack-list compact-list"></div>
+        </section>
+
+        <section class="card reminder-card accent-rose">
+          <div class="section-head">
+            <h3>Upcoming Bills</h3>
+            <p>Monthly reminders based on recurring rules.</p>
+          </div>
+          <div id="billReminderList" class="stack-list compact-list"></div>
+        </section>
+
+        <section class="card accent-violet">
+          <div class="section-head">
+            <h3>SMS Import</h3>
+            <p>Paste bank or card SMS alerts here. The app will detect amount, merchant, and whether it belongs to bank, debit card, or credit card.</p>
+          </div>
+          <div class="entry-form">
+            <label>
+              <span>SMS Messages</span>
+              <textarea id="smsImportInput" rows="8" placeholder="Paste one or more bank SMS messages here"></textarea>
+            </label>
+            <div class="quick-action-bar">
+              <button class="ghost-btn action-btn" id="previewSmsButton" type="button">Preview SMS</button>
+              <button class="primary-btn action-btn" id="importSmsButton" type="button">Import Parsed SMS</button>
+            </div>
+            <p class="status-note" id="smsImportStatus">Automatic phone inbox reading needs a real Android app later. This version lets you paste messages and import them safely now.</p>
+          </div>
+          <div id="smsImportList" class="stack-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <button class="fab" id="fabAddButton" type="button" aria-label="Add expense">+</button>
+  </div>
+
+  <dialog id="editDialog" class="edit-dialog">
+    <form method="dialog" class="edit-form" id="editForm">
+      <h3>Edit Entry</h3>
+      <label>
+        <span>Title</span>
+        <input id="editTitleInput" type="text" required>
+      </label>
+      <div class="grid-two">
+        <label>
+          <span>Amount</span>
+          <input id="editAmountInput" type="number" min="1" step="1" required>
+        </label>
+        <label>
+          <span>Category / Source</span>
+          <input id="editCategoryInput" type="text" required>
+        </label>
+      </div>
+      <label>
+        <span>Date</span>
+        <input id="editDateInput" type="date" required>
+      </label>
+      <div class="grid-two">
+        <label>
+          <span>Payment Mode</span>
+          <select id="editPaymentModeInput">
+            <option>UPI</option>
+            <option>Cash</option>
+            <option>Card</option>
+            <option>Bank</option>
+            <option>Wallet</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Type</span>
+          <select id="editExpenseTypeInput">
+            <option value="need">Need</option>
+            <option value="want">Want</option>
+          </select>
+        </label>
+      </div>
+      <div class="grid-two">
+        <label>
+          <span>Account Type</span>
+          <select id="editAccountSourceInput">
+            <option value="bank-account">Bank Account</option>
+            <option value="debit-card">Debit Card</option>
+            <option value="credit-card">Credit Card</option>
+            <option value="upi">UPI</option>
+            <option value="cash">Cash</option>
+            <option value="wallet">Wallet</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Account / Last 4</span>
+          <input id="editSourceNameInput" type="text">
+        </label>
+      </div>
+      <label>
+        <span>Note</span>
+        <textarea id="editNoteInput" rows="3"></textarea>
+      </label>
+      <div class="toolbar">
+        <button class="ghost-btn" id="cancelEditButton" type="button">Cancel</button>
+        <button class="primary-btn" type="submit">Save Changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="receiptDialog" class="receipt-dialog">
+    <div class="receipt-sheet">
+      <div class="toolbar">
+        <strong id="receiptDialogTitle">Receipt</strong>
+        <button class="ghost-btn" id="closeReceiptButton" type="button">Close</button>
+      </div>
+      <img id="receiptPreviewImage" alt="Receipt preview">
+    </div>
+  </dialog>
+
+  <template id="expenseItemTemplate">
+    <article class="list-item">
+      <div class="list-copy">
+        <div class="item-heading">
+          <h4></h4>
+          <span class="chip"></span>
+        </div>
+        <p class="item-meta"></p>
+        <p class="item-note" hidden></p>
+      </div>
+      <div class="list-actions">
+        <strong></strong>
+        <div class="button-row">
+          <button type="button" class="ghost-btn small-btn" data-action="edit">Edit</button>
+          <button type="button" class="ghost-btn small-btn" data-action="receipt">Receipt</button>
+          <button type="button" class="icon-btn" data-action="delete">Delete</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <template id="simpleItemTemplate">
+    <article class="list-item simple-item">
+      <div class="list-copy">
+        <div class="item-heading">
+          <h4></h4>
+          <span class="chip"></span>
+        </div>
+        <p class="item-meta"></p>
+      </div>
+      <div class="list-actions">
+        <strong></strong>
+        <div class="button-row">
+          <button type="button" class="icon-btn" data-action="delete">Delete</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
